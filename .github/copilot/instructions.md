@@ -97,3 +97,7 @@ Luôn tuân thủ kiến trúc phân lớp đã được định nghĩa. Không 
 
 - **Spring Core:** Nếu tích hợp, hãy sử dụng **Java-based configuration** (`@Configuration`, `@Bean`). Dùng Spring cho **Dependency Injection (DI)** và quản lý transaction khai báo (`@Transactional` trên các phương thức của Service).
 - **Batch Processing:** Khi tạo các hàm xử lý theo lô, hãy nhớ gọi `session.flush()` và `session.clear()` sau mỗi `batchSize` để tránh lỗi `OutOfMemoryError`.
+
+## 7. Phản hồi
+- Luôn phản hồi rõ ràng và chi tiết về các vấn đề hoặc câu hỏi liên quan đến yêu cầu.
+- Luôn phản hồi bằng tiếng Việt, sử dụng ngôn ngữ tự nhiên và dễ hiểu.

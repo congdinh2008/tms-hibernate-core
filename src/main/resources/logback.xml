@@ -3,7 +3,7 @@
     <!-- Console appender -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %X{correlationId:-} - %msg%n</pattern>
         </encoder>
     </appender>
     
@@ -15,7 +15,19 @@
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %X{correlationId:-} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    
+    <!-- SQL appender for development -->
+    <appender name="SQL_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/sql.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/sql.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %X{correlationId:-} - %msg%n</pattern>
         </encoder>
     </appender>
     
@@ -30,4 +42,47 @@
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="FILE" />
     </logger>
+    
+    <!-- Hibernate logging -->
+    <logger name="org.hibernate" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </logger>
+    
+    <!-- Hibernate SQL logging -->
+    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="SQL_FILE" />
+    </logger>
+    
+    <!-- Hibernate SQL parameter binding -->
+    <logger name="org.hibernate.orm.jdbc.bind" level="TRACE" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="SQL_FILE" />
+    </logger>
+    
+    <!-- Hibernate cache logging -->
+    <logger name="org.hibernate.cache" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </logger>
+    
+    <!-- PostgreSQL driver logging -->
+    <logger name="org.postgresql" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </logger>
+    
+    <!-- Connection pool logging -->
+    <logger name="com.zaxxer.hikari" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </logger>
+    
+    <!-- Spring logging (for bonus features) -->
+    <logger name="org.springframework" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </logger>
+    
 </configuration>
