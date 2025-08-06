@@ -1,5 +1,6 @@
 package com.congdinh2008.tms.config;
 
+import com.congdinh2008.tms.entities.*;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,7 +137,17 @@ public class HibernateConfig {
             LocalSessionFactoryBuilder sessionFactoryBuilder = new LocalSessionFactoryBuilder(dataSource);
             sessionFactoryBuilder.addProperties(hibernateProperties);
             
-            logger.debug("Entity classes will be registered when available");
+            // Register entity classes explicitly
+            sessionFactoryBuilder.addAnnotatedClass(User.class);
+            sessionFactoryBuilder.addAnnotatedClass(Project.class);
+            sessionFactoryBuilder.addAnnotatedClass(Task.class);
+            sessionFactoryBuilder.addAnnotatedClass(Tag.class);
+            sessionFactoryBuilder.addAnnotatedClass(TaskHistory.class);
+            
+            // Also scan packages for any additional entities
+            sessionFactoryBuilder.scanPackages("com.congdinh2008.tms.entities");
+            
+            logger.info("Entity classes registered: User, Project, Task, Tag, TaskHistory");
 
             SessionFactory sessionFactory = sessionFactoryBuilder.buildSessionFactory();
             
