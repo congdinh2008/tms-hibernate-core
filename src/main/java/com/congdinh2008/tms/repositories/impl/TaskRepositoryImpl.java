@@ -108,33 +108,6 @@ public class TaskRepositoryImpl extends BaseRepositoryImpl<Task, Long> implement
     }
     
     @Override
-    public List<Task> findOverdueTasks(LocalDateTime referenceDate) {
-        String correlationId = UUID.randomUUID().toString();
-        log.debug("{} - Finding overdue tasks before: {}", correlationId, referenceDate);
-        
-        try {
-            Session session = getCurrentSession();
-            // Native SQL for better performance
-            String sql = """
-                SELECT t.* FROM tasks t
-                WHERE t.due_date < :referenceDate
-                  AND t.status != 'DONE'
-                ORDER BY t.due_date ASC
-                """;
-            
-            Query<Task> query = session.createNativeQuery(sql, Task.class);
-            query.setParameter("referenceDate", referenceDate);
-            List<Task> tasks = query.getResultList();
-            
-            log.debug("{} - Found {} overdue tasks", correlationId, tasks.size());
-            return tasks;
-        } catch (Exception e) {
-            log.error("{} - Error finding overdue tasks: {}", correlationId, e.getMessage(), e);
-            throw new RepositoryException("Failed to find overdue tasks", e);
-        }
-    }
-    
-    @Override
     public List<Task> findSubTasks(Long parentTaskId) {
         String correlationId = UUID.randomUUID().toString();
         log.debug("{} - Finding subtasks for parent task ID: {}", correlationId, parentTaskId);
@@ -422,6 +395,265 @@ public class TaskRepositoryImpl extends BaseRepositoryImpl<Task, Long> implement
         } catch (Exception e) {
             log.error("{} - Error finding root tasks: {}", correlationId, e.getMessage(), e);
             throw new RepositoryException("Failed to find root tasks", e);
+        }
+    }
+    
+    @Override
+    public List<Task> findOverdueTasks() {
+        String correlationId = UUID.randomUUID().toString();
+        log.debug("{} - Finding overdue tasks", correlationId);
+        
+        try {
+            Session session = getCurrentSession();
+            String sql = """
+                SELECT t.* FROM tasks t
+                WHERE t.due_date < NOW()
+                  AND t.status IN ('TODO', 'IN_PROGRESS')
+                ORDER BY t.due_date ASC
+                """;
+            
+            Query<Task> query = session.createNativeQuery(sql, Task.class);
+            List<Task> tasks = query.getResultList();
+            
+            log.debug("{} - Found {} overdue tasks", correlationId, tasks.size());
+            return tasks;
+        } catch (Exception e) {
+            log.error("{} - Error finding overdue tasks: {}", correlationId, e.getMessage(), e);
+            throw new RepositoryException("Failed to find overdue tasks", e);
+        }
+    }
+    
+    @Override
+    public List<Task> findTasksWithComplexFilters(Long assigneeId, TaskStatus status, TaskPriority priority, LocalDateTime dueBefore) {
+        String correlationId = UUID.randomUUID().toString();
+        log.debug("{} - Finding tasks with complex filters - assignee: {}, status: {}, priority: {}, dueBefore: {}", 
+                 correlationId, assigneeId, status, priority, dueBefore);
+        
+        try {
+            Session session = getCurrentSession();
+            StringBuilder sql = new StringBuilder("""
+                SELECT t.* FROM tasks t 
+                LEFT JOIN users u ON t.assignee_id = u.id
+                WHERE 1=1
+                """);
+            
+            List<Object> parameters = new ArrayList<>();
+            int paramIndex = 1;
+            
+            if (assigneeId != null) {
+                sql.append(" AND t.assignee_id = ?").append(paramIndex++);
+                parameters.add(assigneeId);
+            }
+            
+            if (status != null) {
+                sql.append(" AND t.status = ?").append(paramIndex++);
+                parameters.add(status.name());
+            }
+            
+            if (priority != null) {
+                sql.append(" AND t.priority = ?").append(paramIndex++);
+                parameters.add(priority.name());
+            }
+            
+            if (dueBefore != null) {
+                sql.append(" AND t.due_date < ?").append(paramIndex);
+                parameters.add(dueBefore);
+            }
+            
+            sql.append(" ORDER BY t.due_date ASC, t.priority DESC");
+            
+            Query<Task> query = session.createNativeQuery(sql.toString(), Task.class);
+            
+            for (int i = 0; i < parameters.size(); i++) {
+                query.setParameter(i + 1, parameters.get(i));
+            }
+            
+            List<Task> tasks = query.getResultList();
+            
+            log.debug("{} - Found {} tasks with complex filters", correlationId, tasks.size());
+            return tasks;
+        } catch (Exception e) {
+            log.error("{} - Error finding tasks with complex filters: {}", correlationId, e.getMessage(), e);
+            throw new RepositoryException("Failed to find tasks with complex filters", e);
+        }
+    }
+    
+    @Override
+    public List<Object[]> getTaskStatisticsByProject(Long projectId) {
+        String correlationId = UUID.randomUUID().toString();
+        log.debug("{} - Getting task statistics by project ID: {}", correlationId, projectId);
+        
+        try {
+            Session session = getCurrentSession();
+            String sql = """
+                SELECT 
+                    t.status,
+                    COUNT(*) as task_count,
+                    COALESCE(AVG(EXTRACT(EPOCH FROM (t.updated_at - t.created_at))/3600), 0) as avg_hours_to_complete
+                FROM tasks t
+                WHERE t.project_id = ?1
+                GROUP BY t.status
+                ORDER BY t.status
+                """;
+            
+            @SuppressWarnings("unchecked")
+            Query<Object[]> query = session.createNativeQuery(sql, Object[].class);
+            query.setParameter(1, projectId);
+            List<Object[]> results = query.getResultList();
+            
+            log.debug("{} - Found {} status groups for project ID: {}", correlationId, results.size(), projectId);
+            return results;
+        } catch (Exception e) {
+            log.error("{} - Error getting task statistics by project: {}", correlationId, e.getMessage(), e);
+            throw new RepositoryException("Failed to get task statistics by project", e);
+        }
+    }
+    
+    @Override
+    public List<Object[]> getPopularTags(int limit) {
+        String correlationId = UUID.randomUUID().toString();
+        log.debug("{} - Getting popular tags with limit: {}", correlationId, limit);
+        
+        try {
+            Session session = getCurrentSession();
+            String sql = """
+                SELECT 
+                    tg.name,
+                    COUNT(tt.task_id) as usage_count
+                FROM tags tg
+                LEFT JOIN task_tags tt ON tg.id = tt.tag_id
+                GROUP BY tg.id, tg.name
+                ORDER BY usage_count DESC, tg.name ASC
+                LIMIT ?1
+                """;
+            
+            @SuppressWarnings("unchecked")
+            Query<Object[]> query = session.createNativeQuery(sql, Object[].class);
+            query.setParameter(1, limit);
+            List<Object[]> results = query.getResultList();
+            
+            log.debug("{} - Found {} popular tags", correlationId, results.size());
+            return results;
+        } catch (Exception e) {
+            log.error("{} - Error getting popular tags: {}", correlationId, e.getMessage(), e);
+            throw new RepositoryException("Failed to get popular tags", e);
+        }
+    }
+    
+    @Override
+    public List<Task> findCompletedTasksInDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+        String correlationId = UUID.randomUUID().toString();
+        log.debug("{} - Finding completed tasks between {} and {}", correlationId, startDate, endDate);
+        
+        try {
+            Session session = getCurrentSession();
+            String sql = """
+                SELECT t.* FROM tasks t
+                WHERE t.status = 'COMPLETED'
+                  AND t.updated_at BETWEEN ?1 AND ?2
+                ORDER BY t.updated_at DESC
+                """;
+            
+            Query<Task> query = session.createNativeQuery(sql, Task.class);
+            query.setParameter(1, startDate);
+            query.setParameter(2, endDate);
+            List<Task> tasks = query.getResultList();
+            
+            log.debug("{} - Found {} completed tasks in date range", correlationId, tasks.size());
+            return tasks;
+        } catch (Exception e) {
+            log.error("{} - Error finding completed tasks in date range: {}", correlationId, e.getMessage(), e);
+            throw new RepositoryException("Failed to find completed tasks in date range", e);
+        }
+    }
+    
+    @Override
+    public List<Task> findTasksByPriorityNative(String priority) {
+        String correlationId = UUID.randomUUID().toString();
+        log.debug("{} - Finding tasks by priority: {}", correlationId, priority);
+        
+        try {
+            Session session = getCurrentSession();
+            String sql = """
+                SELECT t.* FROM tasks t
+                JOIN projects p ON t.project_id = p.id
+                WHERE t.priority = ?1
+                ORDER BY t.due_date ASC, t.created_at DESC
+                """;
+            
+            Query<Task> query = session.createNativeQuery(sql, Task.class);
+            query.setParameter(1, priority);
+            List<Task> tasks = query.getResultList();
+            
+            log.debug("{} - Found {} tasks with priority: {}", correlationId, tasks.size(), priority);
+            return tasks;
+        } catch (Exception e) {
+            log.error("{} - Error finding tasks by priority: {}", correlationId, e.getMessage(), e);
+            throw new RepositoryException("Failed to find tasks by priority", e);
+        }
+    }
+    
+    @Override
+    public List<Task> findUserTasksInProject(Long userId, String status, Long projectId) {
+        String correlationId = UUID.randomUUID().toString();
+        log.debug("{} - Finding user tasks in project - userId: {}, status: {}, projectId: {}", 
+                 correlationId, userId, status, projectId);
+        
+        try {
+            Session session = getCurrentSession();
+            String sql = """
+                SELECT t.* FROM tasks t
+                WHERE t.assignee_id = ?1
+                  AND t.status = ?2
+                  AND t.project_id = ?3
+                ORDER BY t.due_date ASC
+                """;
+            
+            Query<Task> query = session.createNativeQuery(sql, Task.class);
+            query.setParameter(1, userId);
+            query.setParameter(2, status);
+            query.setParameter(3, projectId);
+            List<Task> tasks = query.getResultList();
+            
+            log.debug("{} - Found {} user tasks in project", correlationId, tasks.size());
+            return tasks;
+        } catch (Exception e) {
+            log.error("{} - Error finding user tasks in project: {}", correlationId, e.getMessage(), e);
+            throw new RepositoryException("Failed to find user tasks in project", e);
+        }
+    }
+    
+    @Override
+    public List<Object[]> findTasksWithManyChanges(Long projectId, Integer minChanges) {
+        String correlationId = UUID.randomUUID().toString();
+        log.debug("{} - Finding tasks with many changes - projectId: {}, minChanges: {}", 
+                 correlationId, projectId, minChanges);
+        
+        try {
+            Session session = getCurrentSession();
+            String sql = """
+                SELECT 
+                    t.*,
+                    COUNT(th.id) as change_count
+                FROM tasks t
+                LEFT JOIN task_history th ON t.id = th.task_id
+                WHERE t.project_id = ?1
+                GROUP BY t.id
+                HAVING COUNT(th.id) >= ?2
+                ORDER BY change_count DESC, t.created_at DESC
+                """;
+            
+            @SuppressWarnings("unchecked")
+            Query<Object[]> query = session.createNativeQuery(sql, Object[].class);
+            query.setParameter(1, projectId);
+            query.setParameter(2, minChanges);
+            List<Object[]> results = query.getResultList();
+            
+            log.debug("{} - Found {} tasks with many changes", correlationId, results.size());
+            return results;
+        } catch (Exception e) {
+            log.error("{} - Error finding tasks with many changes: {}", correlationId, e.getMessage(), e);
+            throw new RepositoryException("Failed to find tasks with many changes", e);
         }
     }
 }

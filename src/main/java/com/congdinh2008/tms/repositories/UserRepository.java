@@ -50,4 +50,29 @@ public interface UserRepository extends BaseRepository<User, Long> {
      * @return list of users with assigned tasks in the project
      */
     List<User> findUsersWithTasksInProject(Long projectId);
+    
+    /**
+     * Get user productivity statistics in a specific project
+     * Native query with complex aggregations for performance
+     * @param projectId the project ID
+     * @return list of objects containing user and productivity statistics
+     */
+    List<Object[]> getUserProductivityInProject(Long projectId);
+    
+    /**
+     * Find top performing users based on completed tasks
+     * Native query for performance optimization
+     * @param limit maximum number of users to return
+     * @return list of users ordered by performance
+     */
+    List<User> findTopPerformers(Integer limit);
+    
+    /**
+     * Find users with workload analysis
+     * Native query with task counting and status analysis
+     * @param startDate analysis start date
+     * @param endDate analysis end date
+     * @return list of objects containing user and workload data
+     */
+    List<Object[]> getUserWorkloadAnalysis(java.time.LocalDateTime startDate, java.time.LocalDateTime endDate);
 }
