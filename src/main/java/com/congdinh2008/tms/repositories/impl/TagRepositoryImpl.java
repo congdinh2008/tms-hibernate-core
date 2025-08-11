@@ -15,7 +15,7 @@ import java.util.UUID;
 /**
  * Implementation of TagRepository interface
  */
-@Repository
+@Repository("tagRepository")
 public class TagRepositoryImpl extends BaseRepositoryImpl<Tag, Long> implements TagRepository {
     
     private static final Logger logger = LoggerFactory.getLogger(TagRepositoryImpl.class);

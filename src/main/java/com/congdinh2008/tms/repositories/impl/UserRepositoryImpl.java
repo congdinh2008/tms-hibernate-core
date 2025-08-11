@@ -13,7 +13,7 @@ import java.util.UUID;
 /**
  * Repository implementation for User entity operations
  */
-@Repository
+@Repository("userRepository")
 public class UserRepositoryImpl extends BaseRepositoryImpl<User, Long> implements UserRepository {
     
     @Override

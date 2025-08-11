@@ -1,8 +1,11 @@
 package com.congdinh2008.tms.config;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+
+import java.util.Scanner;
 
 /**
  * Root Spring Configuration class
@@ -15,5 +18,12 @@ import org.springframework.context.annotation.Import;
 @ComponentScan(basePackages = "com.congdinh2008.tms")
 @Import({DataSourceConfig.class, HibernateConfig.class})
 public class ApplicationConfig {
-    // Root configuration class - specific beans can be added here if needed
+    
+    /**
+     * Scanner bean for CLI input
+     */
+    @Bean
+    public Scanner scanner() {
+        return new Scanner(System.in);
+    }
 }

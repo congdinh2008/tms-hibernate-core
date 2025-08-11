@@ -24,7 +24,7 @@ import java.util.UUID;
 /**
  * Repository implementation for Task entity operations
  */
-@Repository
+@Repository("taskRepository")
 public class TaskRepositoryImpl extends BaseRepositoryImpl<Task, Long> implements TaskRepository {
     
     @Override

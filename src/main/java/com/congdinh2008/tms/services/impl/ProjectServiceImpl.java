@@ -27,7 +27,7 @@ import java.util.List;
  * @version 1.0.0
  * @since 1.0.0
  */
-@Service
+@Service("projectService")
 @Transactional
 public class ProjectServiceImpl implements ProjectService {
     

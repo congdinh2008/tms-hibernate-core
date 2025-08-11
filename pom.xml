@@ -186,6 +186,14 @@
             <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- H2 Database for Testing -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.3.232</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -211,6 +219,19 @@
                         <include>**/*Test.java</include>
                         <include>**/*Tests.java</include>
                     </includes>
+                    <!-- Configure for stable test execution without forking -->
+                    <argLine>-Xmx1024m -XX:MaxMetaspaceSize=256m -XX:+UseG1GC -Djava.awt.headless=true</argLine>
+                    <forkCount>0</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <trimStackTrace>false</trimStackTrace>
+                    <useSystemClassLoader>true</useSystemClassLoader>
+                    <runOrder>alphabetical</runOrder>
+                    <!-- System properties for test environment -->
+                    <systemPropertyVariables>
+                        <java.awt.headless>true</java.awt.headless>
+                        <spring.profiles.active>test</spring.profiles.active>
+                        <maven.test.failure.ignore>false</maven.test.failure.ignore>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
 

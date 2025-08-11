@@ -15,7 +15,7 @@ import java.util.UUID;
 /**
  * Implementation of ProjectRepository interface
  */
-@Repository
+@Repository("projectRepository")
 public class ProjectRepositoryImpl extends BaseRepositoryImpl<Project, Long> implements ProjectRepository {
     
     private static final Logger logger = LoggerFactory.getLogger(ProjectRepositoryImpl.class);

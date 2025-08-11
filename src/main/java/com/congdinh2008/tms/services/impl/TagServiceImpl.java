@@ -24,7 +24,7 @@ import java.util.List;
  * @version 1.0.0
  * @since 1.0.0
  */
-@Service
+@Service("tagService")
 @Transactional
 public class TagServiceImpl implements TagService {
     

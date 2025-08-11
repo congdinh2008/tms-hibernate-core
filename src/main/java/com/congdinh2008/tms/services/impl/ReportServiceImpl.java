@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 /**
  * Implementation of ReportService for generating various reports and analytics
  */
-@Service
+@Service("reportService")
 @Transactional(readOnly = true)
 public class ReportServiceImpl implements ReportService {
     
