@@ -121,12 +121,12 @@ public class UserRepositoryImpl extends BaseRepositoryImpl<User, Long> implement
                 WHERE pm.user_id = :userId AND pm.project_id = :projectId
                 """;
             
-            Query<Number> query = session.createNativeQuery(sql, Number.class);
+            Query<Long> query = session.createNativeQuery(sql, Long.class);
             query.setParameter("userId", userId);
             query.setParameter("projectId", projectId);
-            Number count = query.getSingleResult();
+            Long count = query.getSingleResult();
             
-            boolean isMember = count.longValue() > 0;
+            boolean isMember = count > 0;
             log.debug("{} - User {} is member of project {}: {}", 
                      correlationId, userId, projectId, isMember);
             return isMember;
